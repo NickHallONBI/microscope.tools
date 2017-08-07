@@ -17,17 +17,42 @@
 ## along with this.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
-import scipy.stats
+import scipy.stats as stats
 from skimage import io
-import joshs_function
+import matplotlib.pyplot as plt
+from ZernikeDecomposition import PhaseUnwrap
 
 def CreateControlMatrix(image_stack_file_name, centre, diameter, numActuators=69, pokeSteps = np.linspace(-1,1,5)):
-    # Read in the image stack. Must be tiff
-    imageStack = io.imread('%s.tif' %image_stack_file_name)
-    zernikeModeAmp = np.zeros(np.shape(range(pokeSteps),numActuators))
+    #The number of Zernike modes decomposed should always be the same as the number of actuators available
+    noZernikeModes = numActuators
+    slopes = np.zeros(noZernikeModes)
+    intercepts = np.zeros(noZernikeModes)
+    r_values = np.zeros(noZernikeModes)
+    p_values = np.zeros(noZernikeModes)
+    std_errs = np.zeros(noZernikeModes)
 
-    # Here the each image in the image stack (read in as np.array), centre and diameter should be passed to Josh's
+    # Read in the image stack. Must be tiff
+    imageStack = io.imread('%s' %image_stack_file_name)
+    zernikeModeAmp = np.zeros((len(pokeSteps),noZernikeModes))
+    controlMatrix = np.zeros((noZernikeModes,noZernikeModes))
+
+    # Here the each image in the image stack (read in as np.array), centre and diameter should be passed to the unwrap
     # function to obtain the Zernike modes for each one. For the moment a set of random Zernike modes are generated.
     for ii in range(numActuators):
-        for jj in range(pokeSteps):
-            zernikeModeAmp[jj,:] = joshs_function(imageStack[ii+jj,:,:], centre, diameter)
+
+        #Get the amplitudes of each Zernike mode for the poke range of one actuator
+        for jj in range(len(pokeSteps)):
+            #[zernikeModeAmp[jj,:], unwrappedPhase] = PhaseUnwrap(imageStack[ii+jj,:,:], noZernikeModes=numActuators-1,
+            #                                                   MIDDLE=centre, DIAMETER=diameter)
+            zernikeModeAmp[jj, :] = np.random.rand(1, numActuators)
+
+        #Fit a linear regression to get the relationship between actuator position and Zernike mode amplitude
+        for kk in range(numActuators):
+            slopes[kk], intercepts[kk], r_values[kk], p_values[kk], std_errs[kk] = stats.linregress(pokeSteps,zernikeModeAmp[:,kk])
+
+        #Input obtained slopes as the entries in the control matrix
+        controlMatrix[ii,:] = slopes[:]
+    np.savetxt('controlMatrix.txt', controlMatrix)
+    print(np.shape(controlMatrix))
+
+CreateControlMatrix('DeepSIM_interference_test.png', [900,975], 1200)
