@@ -14,20 +14,18 @@
 # along with this.  If not, see <http://www.gnu.org/licenses/>.
 
 #import required packs
-import scipy
 import numpy
 import PIL
 import matplotlib.pyplot as plt
-import scipy.fftpack
-import math
 import numpy.ma as ma
 from unwrap import unwrap
 import cv2
+import opticspy
 
 #Please note: numpy array indexing is done [y,x] hence there are some oddities in this code to overcome missmatches
 #that this causes
 
-def PhaseUnwrap(image, MIDDLE, DIAMETER, REGION=30):
+def PhaseUnwrap(image, noZernikeModes, MIDDLE, DIAMETER, REGION=30):
 
     #convert image to array and float
     data = numpy.asarray(image)
@@ -89,14 +87,18 @@ def PhaseUnwrap(image, MIDDLE, DIAMETER, REGION=30):
     #crop to fill array to improve performance of zernike decomposition
     out = numpy.zeros((DIAMETER,DIAMETER), dtype=float)
     out = phaseunwrap[MIDDLE[1]-int(round(DIAMETER/2)):MIDDLE[1]+int(round(DIAMETER/2)),MIDDLE[0]-int(round(DIAMETER/2)):MIDDLE[0]+int(round(DIAMETER/2))]
-    return out
+    out = out.filled(0)
+    print("Calculating Zernike modes")
+    coef, memLocation1 = opticspy.zernike.fitting(out,noZernikeModes)
+    return coef, out
 
 # setting parameters and defining functions for padding and masking
-MIDDLE = [900,975]
-DIAMETER = 1200
+#middle = [900,975]
+#diameter = 1200
 
 #collect image from file
-im = PIL.Image.open('DeepSIM_interference_test.png')
-out = PhaseUnwrap(im, MIDDLE, DIAMETER)
-plt.imshow(out)
-plt.show()
+#im = PIL.Image.open('DeepSIM_interference_test.png')
+#[coef, out] = PhaseUnwrap(im, noZernikeModes = 20, MIDDLE = middle, DIAMETER = diameter)
+#print(coef)
+#plt.imshow(out)
+#plt.show()
