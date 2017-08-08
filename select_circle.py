@@ -16,20 +16,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Display a window that allows the user to select a circular area."""
-import tkinter as tk
+import Tkinter as tk
+from PIL import Image
+import numpy as np
+from resizeimage import resizeimage
 
 class App(tk.Frame):
     def __init__(self, master=None):
         tk.Frame.__init__(self, master)
-        self.grid()
+        self.pack()
         self.create_widgets()
 
     def create_widgets(self):
-        self.canvas = Canvas(self, width=400, height=400)
-        self.canvas.grid()
+        self.canvas = Canvas(self, width=600, height=600)
+        temp = Image.open('DeepSIM_interference_test.png')
+        if len(np.shape(temp)) == 2:
+            temp = resizeimage.resize_cover(temp, [512, 512])
+            temp = temp.save("photo.ppm", "ppm")
+        elif len(np.shape(temp)) == 3:
+            temp = resizeimage.resize_cover(temp[0,:,:], [512, 512])
+            temp = temp.save("photo.ppm", "ppm")
+        self.image = tk.PhotoImage(file = "photo.ppm")
+        self.canvas.create_image(45, 50, anchor = tk.NW, image = self.image)
+        self.canvas.pack()
 
         self.btn_quit = tk.Button(self, text="Quit", command=self.quit)
-        self.btn_quit.grid()
+        self.btn_quit.pack()
 
 
 class Canvas(tk.Canvas):
