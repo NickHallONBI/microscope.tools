@@ -1,0 +1,11 @@
+*.pyc
+
+## Some people use MacOS
+.DS_Store
+
+## Some text editors often create these
+~.*
+
+##
+controlMatrix.txt
+
