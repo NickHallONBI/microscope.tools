@@ -19,6 +19,7 @@
 import numpy as np
 import scipy.stats as stats
 from skimage import io
+import select_circle
 import matplotlib.pyplot as plt
 from ZernikeDecomposition import PhaseUnwrap
 
@@ -54,4 +55,7 @@ def CreateControlMatrix(image_stack_file_name, centre, diameter, numActuators=69
         controlMatrix[ii,:] = slopes[:]
     np.savetxt('controlMatrix.txt', controlMatrix)
 
+app = select_circle.App()
+app.master.title('Select a circle.')
+app.mainloop()
 CreateControlMatrix('DeepSIM_interference_test.png', [900,975], 1200)
