@@ -22,14 +22,16 @@ import numpy as np
 from resizeimage import resizeimage
 
 class App(tk.Frame):
-    def __init__(self, master=None):
+    def __init__(self, filename, master=None):
         tk.Frame.__init__(self, master)
         self.pack()
+        self.filename = str(filename)
         self.create_widgets()
+
 
     def create_widgets(self):
         self.canvas = Canvas(self, width=600, height=600)
-        temp = Image.open('DeepSIM_interference_test.png')
+        temp = Image.open(self.filename)
         if len(np.shape(temp)) == 2:
             temp = resizeimage.resize_cover(temp, [512, 512])
             temp = temp.save("photo.ppm", "ppm")
