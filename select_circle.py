@@ -26,6 +26,8 @@ class App(tk.Frame):
         tk.Frame.__init__(self, master)
         self.pack()
         self.filename = str(filename)
+        self.ratio = 4
+        self.offset = [45, 50]
         self.create_widgets()
 
 
@@ -33,13 +35,13 @@ class App(tk.Frame):
         self.canvas = Canvas(self, width=600, height=600)
         temp = Image.open(self.filename)
         if len(np.shape(temp)) == 2:
-            temp = resizeimage.resize_cover(temp, [512, 512])
+            temp = resizeimage.resize_cover(temp, [(np.shape(temp)[0]/self.ratio),(np.shape(temp)[1]/self.ratio)])
             temp = temp.save("photo.ppm", "ppm")
         elif len(np.shape(temp)) == 3:
-            temp = resizeimage.resize_cover(temp[0,:,:], [512, 512])
+            temp = resizeimage.resize_cover(temp[0,:,:], ([np.shape(temp)[1],np.shape(temp)[2]]/self.ratio))
             temp = temp.save("photo.ppm", "ppm")
         self.image = tk.PhotoImage(file = "photo.ppm")
-        self.canvas.create_image(45, 50, anchor = tk.NW, image = self.image)
+        self.canvas.create_image(self.offset[0], self.offset[1], anchor = tk.NW, image = self.image)
         self.canvas.pack()
 
         self.btn_quit = tk.Button(self, text="Quit", command=self.quit)
@@ -57,8 +59,10 @@ class Canvas(tk.Canvas):
         self.circle = None
         self.p_click = None
         self.bbox_click = None
-        self.centre = (0,0)
+        self.centre = [0,0]
         self.diameter = 0
+        self.ratio = 4
+        self.offset = [45, 50]
 
     def on_release(self, event):
         self.p_click = None
@@ -67,8 +71,9 @@ class Canvas(tk.Canvas):
     def on_click(self, event):
         if self.circle == None:
             self.circle = self .create_oval((event.x-1, event.y-1, event.x+1, event.y+1))
-            self.centre = (event.x, event.y)
-            self.diameter = event.x+1 - event.x+1 + 1
+            self.centre[0] = (event.x - self.offset[0]) * self.ratio
+            self.centre[1] = (event.y - self.offset[1]) * self.ratio
+            self.diameter = (event.x+1 - event.x+1 + 1) * self.ratio
             np.savetxt('circleParameters.txt', (self.centre[0], self.centre[1], self.diameter))
 
     def circle_resize(self, event):
@@ -79,13 +84,13 @@ class Canvas(tk.Canvas):
             self.bbox_click = self.bbox(self.circle)
             return
         bbox = self.bbox(self.circle)
-        self.centre = ((bbox[2] + bbox[0])/2, (bbox[3] + bbox[1])/2)
-        r0 = ((self.p_click[0] - self.centre[0])**2 + (self.p_click[1] - self.centre[1])**2)**0.5
-        r1 = ((event.x - self.centre[0])**2 + (event.y - self.centre[1])**2)**0.5
+        unscaledCentre = ((bbox[2] + bbox[0])/2, (bbox[3] + bbox[1])/2)
+        r0 = ((self.p_click[0] - unscaledCentre[0])**2 + (self.p_click[1] - unscaledCentre[1])**2)**0.5
+        r1 = ((event.x - unscaledCentre[0])**2 + (event.y - unscaledCentre[1])**2)**0.5
         scale = r1 / r0
-        self.diameter = (r0 + r1)/2
-        self.scale(self.circle, self.centre[0], self.centre[1], scale, scale)
+        self.scale(self.circle, unscaledCentre[0], unscaledCentre[1], scale, scale)
         self.p_click= (event.x, event.y)
+        self.diameter = (self.bbox(self.circle)[2] - self.bbox(self.circle)[0]) * self.ratio
         np.savetxt('circleParameters.txt', (self.centre[0], self.centre[1], self.diameter))
 
     def circle_drag(self, event):
@@ -98,7 +103,10 @@ class Canvas(tk.Canvas):
                   event.x - self.p_click[0],
                   event.y - self.p_click[1])
         self.p_click = (event.x, event.y)
-        self.centre = self.p_click
+        bbox = self.bbox(self.circle)
+        unscaledCentre = ((bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2)
+        self.centre[0] = (unscaledCentre[0] - self.offset[0]) * self.ratio
+        self.centre[1] = (unscaledCentre[1] - self.offset[1]) * self.ratio
         np.savetxt('circleParameters.txt', (self.centre[0], self.centre[1], self.diameter))
         self.update()
 
