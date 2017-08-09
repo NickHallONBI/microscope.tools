@@ -19,7 +19,6 @@
 import numpy as np
 import scipy.stats as stats
 from skimage import io
-import select_circle
 import matplotlib.pyplot as plt
 from ZernikeDecomposition import PhaseUnwrap
 
@@ -67,4 +66,13 @@ def CreateControlMatrix(image_stack_file_name, numActuators=69, pokeSteps = np.l
         controlMatrix = np.transpose(controlMatrix)
     np.savetxt('controlMatrix.txt', controlMatrix)
 
-CreateControlMatrix('DeepSIM_interference_test.png')
+def FlattenMirror(interference_image, numActuators = 69):
+    try:
+        controlMatrix = np.loadtxt("controlMatrix.txt")
+        print np.shape(controlMatrix)
+    except IOError:
+        print("Error: Control Matrix do not exist.")
+        return
+
+#CreateControlMatrix('DeepSIM_interference_test.png')
+FlattenMirror(1)
