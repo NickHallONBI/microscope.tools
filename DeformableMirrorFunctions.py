@@ -64,6 +64,7 @@ def CreateControlMatrix(image_stack_file_name, numActuators=69, pokeSteps = np.l
 
         #Input obtained slopes as the entries in the control matrix
         controlMatrix[ii,:] = slopes[:]
+        controlMatrix = np.transpose(controlMatrix)
     np.savetxt('controlMatrix.txt', controlMatrix)
 
 CreateControlMatrix('DeepSIM_interference_test.png')
