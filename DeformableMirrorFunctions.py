@@ -69,10 +69,11 @@ def CreateControlMatrix(image_stack_file_name, numActuators=69, pokeSteps = np.l
 def FlattenMirror(interference_image, numActuators = 69):
     try:
         controlMatrix = np.loadtxt("controlMatrix.txt")
-        print np.shape(controlMatrix)
     except IOError:
         print("Error: Control Matrix do not exist.")
         return
+
+        zernike_modes = np.shape(controlMatrix)[0]
 
 #CreateControlMatrix('DeepSIM_interference_test.png')
 FlattenMirror(1)
