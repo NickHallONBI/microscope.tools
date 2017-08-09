@@ -20,6 +20,7 @@ import Tkinter as tk
 from PIL import Image
 import numpy as np
 from resizeimage import resizeimage
+import sys
 
 class App(tk.Frame):
     def __init__(self, filename, master=None):
@@ -112,6 +113,6 @@ class Canvas(tk.Canvas):
 
 
 if __name__ == '__main__':
-    app = App('DeepSIM_interference_test.png')
+    app = App('%s' %sys.argv[1])
     app.master.title('Select a circle.')
     app.mainloop()
