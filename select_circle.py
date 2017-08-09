@@ -57,6 +57,8 @@ class Canvas(tk.Canvas):
         self.circle = None
         self.p_click = None
         self.bbox_click = None
+        self.centre = (0,0)
+        self.diameter = 0
 
     def on_release(self, event):
         self.p_click = None
@@ -65,6 +67,9 @@ class Canvas(tk.Canvas):
     def on_click(self, event):
         if self.circle == None:
             self.circle = self .create_oval((event.x-1, event.y-1, event.x+1, event.y+1))
+            self.centre = (event.x, event.y)
+            self.diameter = event.x+1 - event.x+1 + 1
+            np.savetxt('circleParameters.txt', (self.centre[0], self.centre[1], self.diameter))
 
     def circle_resize(self, event):
         if self.circle is None:
@@ -74,12 +79,14 @@ class Canvas(tk.Canvas):
             self.bbox_click = self.bbox(self.circle)
             return
         bbox = self.bbox(self.circle)
-        centre = ((bbox[2] + bbox[0])/2, (bbox[3] + bbox[1])/2)
-        r0 = ((self.p_click[0] - centre[0])**2 + (self.p_click[1] - centre[1])**2)**0.5
-        r1 = ((event.x - centre[0])**2 + (event.y - centre[1])**2)**0.5
+        self.centre = ((bbox[2] + bbox[0])/2, (bbox[3] + bbox[1])/2)
+        r0 = ((self.p_click[0] - self.centre[0])**2 + (self.p_click[1] - self.centre[1])**2)**0.5
+        r1 = ((event.x - self.centre[0])**2 + (event.y - self.centre[1])**2)**0.5
         scale = r1 / r0
-        self.scale(self.circle, centre[0], centre[1], scale, scale)
+        self.diameter = (r0 + r1)/2
+        self.scale(self.circle, self.centre[0], self.centre[1], scale, scale)
         self.p_click= (event.x, event.y)
+        np.savetxt('circleParameters.txt', (self.centre[0], self.centre[1], self.diameter))
 
     def circle_drag(self, event):
         if self.circle is None:
@@ -91,10 +98,12 @@ class Canvas(tk.Canvas):
                   event.x - self.p_click[0],
                   event.y - self.p_click[1])
         self.p_click = (event.x, event.y)
+        self.centre = self.p_click
+        np.savetxt('circleParameters.txt', (self.centre[0], self.centre[1], self.diameter))
         self.update()
 
 
 if __name__ == '__main__':
-    app = App()
+    app = App('DeepSIM_interference_test.png')
     app.master.title('Select a circle.')
     app.mainloop()
