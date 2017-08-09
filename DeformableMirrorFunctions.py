@@ -23,7 +23,18 @@ import select_circle
 import matplotlib.pyplot as plt
 from ZernikeDecomposition import PhaseUnwrap
 
-def CreateControlMatrix(image_stack_file_name, centre, diameter, numActuators=69, pokeSteps = np.linspace(-1,1,5)):
+def CreateControlMatrix(image_stack_file_name, numActuators=69, pokeSteps = np.linspace(-1,1,5)):
+    try:
+        parameters = np.loadtxt("circleParameters.txt", int)
+    except IOError:
+        print("Error: Masking parameters do not exist. Create by running select_circle.py")
+        return
+
+    centre = [0,0]
+    centre[0] = parameters[0]
+    centre[1] = parameters[1]
+    diameter = parameters[2]
+
     #The number of Zernike modes decomposed should always be the same as the number of actuators available
     noZernikeModes = numActuators
     slopes = np.zeros(noZernikeModes)
@@ -55,7 +66,4 @@ def CreateControlMatrix(image_stack_file_name, centre, diameter, numActuators=69
         controlMatrix[ii,:] = slopes[:]
     np.savetxt('controlMatrix.txt', controlMatrix)
 
-app = select_circle.App()
-app.master.title('Select a circle.')
-app.mainloop()
-CreateControlMatrix('DeepSIM_interference_test.png', [900,975], 1200)
+CreateControlMatrix('DeepSIM_interference_test.png')
