@@ -22,7 +22,8 @@ from skimage import io
 import matplotlib.pyplot as plt
 from ZernikeDecomposition import PhaseUnwrap
 
-def CreateControlMatrix(image_stack_file_name, numActuators=69, pokeSteps = np.linspace(-1,1,5)):
+def CreateControlMatrix(image_stack_file_name, numActuators=69):
+    #Read in the parameters needed for the phase mask
     try:
         parameters = np.loadtxt("circleParameters.txt", int)
     except IOError:
@@ -44,18 +45,19 @@ def CreateControlMatrix(image_stack_file_name, numActuators=69, pokeSteps = np.l
 
     # Read in the image stack. Must be tiff
     imageStack = io.imread('%s' %image_stack_file_name)
-    zernikeModeAmp = np.zeros((len(pokeSteps),noZernikeModes))
+    noSteps = np.shape(imageStack)[0]/numActuators
+    pokeSteps = np.linspace(-1, 1, noSteps)
+    zernikeModeAmp = np.zeros((noSteps,noZernikeModes))
     controlMatrix = np.zeros((noZernikeModes,noZernikeModes))
 
     # Here the each image in the image stack (read in as np.array), centre and diameter should be passed to the unwrap
-    # function to obtain the Zernike modes for each one. For the moment a set of random Zernike modes are generated.
+    # function to obtain the Zernike modes for each one.
     for ii in range(numActuators):
 
         #Get the amplitudes of each Zernike mode for the poke range of one actuator
         for jj in range(len(pokeSteps)):
-            #[zernikeModeAmp[jj,:], unwrappedPhase] = PhaseUnwrap(imageStack[ii+jj,:,:], noZernikeModes=numActuators-1,
-            #                                                   MIDDLE=centre, DIAMETER=diameter)
-            zernikeModeAmp[jj, :] = np.random.rand(1, numActuators)
+            [zernikeModeAmp[jj,:], unwrappedPhase] = PhaseUnwrap(imageStack[ii+jj,:,:], noZernikeModes=numActuators-1,
+                                                                MIDDLE=centre, DIAMETER=diameter)
 
         #Fit a linear regression to get the relationship between actuator position and Zernike mode amplitude
         for kk in range(numActuators):
@@ -66,14 +68,49 @@ def CreateControlMatrix(image_stack_file_name, numActuators=69, pokeSteps = np.l
         controlMatrix = np.transpose(controlMatrix)
     np.savetxt('controlMatrix.txt', controlMatrix)
 
-def FlattenMirror(interference_image, numActuators = 69):
+def FlattenMirror(numActuators = 69):
     try:
         controlMatrix = np.loadtxt("controlMatrix.txt")
     except IOError:
         print("Error: Control Matrix do not exist.")
         return
 
-        zernike_modes = np.shape(controlMatrix)[0]
+    numZernikeModes = np.shape(controlMatrix)[0] - 1
+    zernikeAmp = np.zeros(np.shape(controlMatrix)[0])
+    actuatorValues = np.zeros(np.shape(controlMatrix)[0])
+
+    # Read in the parameters needed for the phase mask
+    try:
+        parameters = np.loadtxt("circleParameters.txt", int)
+    except IOError:
+        print("Error: Masking parameters do not exist. Create by running select_circle.py")
+        return
+
+    centre = [0, 0]
+    centre[0] = parameters[0]
+    centre[1] = parameters[1]
+    diameter = parameters[2]
+
+    # Iterative loop
+    for ii in range(10):
+        #Here an image needs to be taken and read in in order to be decomposed into Zernike modes.
+        #takeImage()  (Dummy function)
+        #image = io.imread('%s' %image_file_name)
+        image = io.imread('DeepSIM_interference_test.png')
+        ##Note that in taking the image, it might not need to be saved and read in but rather could be read in direct
+        ##from the camera.
+
+        #Decompose image into zernike modes
+        [zernikeAmp, unwrappedPhase] = PhaseUnwrap(image[:, :], noZernikeModes=numZernikeModes,
+                                                    MIDDLE=centre, DIAMETER=diameter)
+
+        #Solve for actuator values
+        actuatorValues = actuatorValues - np.linalg.solve(controlMatrix, zernikeAmp)
+
+        #Send the actuator values to the DM
+        #send(actuatorValues)
+
+
 
 #CreateControlMatrix('DeepSIM_interference_test.png')
 FlattenMirror(1)
