@@ -21,8 +21,9 @@ import scipy.stats as stats
 from skimage import io
 import matplotlib.pyplot as plt
 from ZernikeDecomposition import PhaseUnwrap
+from microscope.mirror.alpao import AlpaoDeformableMirror as AO
 
-def CreateControlMatrix(image_stack_file_name, numActuators=69):
+def CreateControlMatrix(image_stack_file_name):
     #Read in the parameters needed for the phase mask
     try:
         parameters = np.loadtxt("circleParameters.txt", int)
@@ -34,6 +35,8 @@ def CreateControlMatrix(image_stack_file_name, numActuators=69):
     centre[0] = parameters[0]
     centre[1] = parameters[1]
     diameter = parameters[2]
+
+    numActuators = AO.get_n_actuators()
 
     #The number of Zernike modes decomposed should always be the same as the number of actuators available
     noZernikeModes = numActuators
@@ -68,12 +71,14 @@ def CreateControlMatrix(image_stack_file_name, numActuators=69):
         controlMatrix = np.transpose(controlMatrix)
     np.savetxt('controlMatrix.txt', controlMatrix)
 
-def FlattenMirror(numActuators = 69):
+def FlattenMirror():
     try:
         controlMatrix = np.loadtxt("controlMatrix.txt")
     except IOError:
         print("Error: Control Matrix do not exist.")
         return
+
+    numActuators = AO.get_n_actuators()
 
     numZernikeModes = np.shape(controlMatrix)[0] - 1
     zernikeAmp = np.zeros(np.shape(controlMatrix)[0])
@@ -108,7 +113,7 @@ def FlattenMirror(numActuators = 69):
         actuatorValues = actuatorValues - np.linalg.solve(controlMatrix, zernikeAmp)
 
         #Send the actuator values to the DM
-        #send(actuatorValues)
+        AO.send(actuatorValues)
 
 
 
