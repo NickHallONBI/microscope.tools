@@ -17,13 +17,16 @@
 ## along with this.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
-import scipy.stats as stats
-from skimage import io
+import time
+#import scipy.stats as stats
+#from skimage import io
 import matplotlib.pyplot as plt
 from ZernikeDecomposition import PhaseUnwrap
-from microscope.mirror.alpao import AlpaoDeformableMirror as AO
+from microscope import clients
 
 def CreateControlMatrix(image_stack_file_name):
+    AO = clients.DataClient('PYRO:AlpaoDeformableMirror@192.168.1.20:8007')
+
     #Read in the parameters needed for the phase mask
     try:
         parameters = np.loadtxt("circleParameters.txt", int)
@@ -114,8 +117,9 @@ def FlattenMirror():
 
         #Send the actuator values to the DM
         AO.send(actuatorValues)
+    np.savetxt('dmFlatValues.txt', actuatorValues)
 
 
 
 #CreateControlMatrix('DeepSIM_interference_test.png')
-FlattenMirror(1)
+FlattenMirror()
