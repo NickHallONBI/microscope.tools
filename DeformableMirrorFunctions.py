@@ -75,12 +75,19 @@ def CreateControlMatrix(image_stack_file_name):
     np.savetxt('controlMatrix.txt', controlMatrix)
 
 def FlattenMirror():
+    camera = clients.DataClient('PYRO:XimeaCamera@192.168.1.20:8008')
+    AO = clients.DataClient('PYRO:AlpaoDeformableMirror@192.168.1.20:8007')
+
+    camera.enable()
+    camera.set_exposure_time(0.01)
+
+    data = []
+
     try:
         controlMatrix = np.loadtxt("controlMatrix.txt")
     except IOError:
         print("Error: Control Matrix do not exist.")
         return
-
     numActuators = AO.get_n_actuators()
 
     numZernikeModes = np.shape(controlMatrix)[0] - 1
@@ -93,20 +100,15 @@ def FlattenMirror():
     except IOError:
         print("Error: Masking parameters do not exist. Create by running select_circle.py")
         return
-
     centre = [0, 0]
     centre[0] = parameters[0]
     centre[1] = parameters[1]
     diameter = parameters[2]
-
     # Iterative loop
     for ii in range(10):
         #Here an image needs to be taken and read in in order to be decomposed into Zernike modes.
-        #takeImage()  (Dummy function)
-        #image = io.imread('%s' %image_file_name)
-        image = io.imread('DeepSIM_interference_test.png')
-        ##Note that in taking the image, it might not need to be saved and read in but rather could be read in direct
-        ##from the camera.
+        time.sleep(0.5)
+        image = np.asarray(camera.trigger_and_wait()[0])
 
         #Decompose image into zernike modes
         [zernikeAmp, unwrappedPhase] = PhaseUnwrap(image[:, :], noZernikeModes=numZernikeModes,
