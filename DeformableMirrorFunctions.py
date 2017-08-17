@@ -24,6 +24,39 @@ import matplotlib.pyplot as plt
 from ZernikeDecomposition import PhaseUnwrap
 from microscope import clients
 
+def getPokeStack(pokeSteps):
+    camera = clients.DataClient('PYRO:XimeaCamera@192.168.1.20:8008')
+    AO = clients.DataClient('PYRO:AlpaoDeformableMirror@192.168.1.20:8007')
+
+    camera.enable()
+    camera.set_exposure_time(0.01)
+
+    data = []
+
+    numActuators = AO.get_n_actuators()
+    pokeRange = np.linspace(-1.0,1.0,pokeSteps)
+    values = np.full(((numActuators*pokeSteps),numActuators),0.0)
+
+    for poke in range(pokeSteps):
+        for actuator in range(numActuators):
+            index = (pokeSteps * actuator) + poke
+            values[index, actuator] = pokeRange[poke]
+
+    index = 1
+    for value in values:
+        AO.send(value)
+        time.sleep(0.5)
+        image = camera.trigger_and_wait()[0]
+        data.append(image)
+        print("Frame %d of %d captured." %(index,len(values)))
+        index += 1
+    data = np.asarray(data)
+
+    print(np.shape(data))
+    np.savetxt("pokeStack.txt", data)
+
+    camera.disable()
+
 def CreateControlMatrix(image_stack_file_name):
     AO = clients.DataClient('PYRO:AlpaoDeformableMirror@192.168.1.20:8007')
 
