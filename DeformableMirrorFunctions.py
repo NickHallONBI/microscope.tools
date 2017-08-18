@@ -18,8 +18,8 @@
 
 import numpy as np
 import time
-#import scipy.stats as stats
-#from skimage import io
+import scipy.stats as stats
+from skimage import io
 import matplotlib.pyplot as plt
 from ZernikeDecomposition import PhaseUnwrap
 from microscope import clients
