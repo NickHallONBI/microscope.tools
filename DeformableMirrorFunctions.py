@@ -35,11 +35,11 @@ def getImage(pokeSteps):
 
     numActuators = AO.get_n_actuators()
     pokeRange = np.linspace(-1.0,1.0,pokeSteps)
-    values = np.full(((numActuators*pokeSteps),numActuators),0.0)
+    values = np.full(((5*pokeSteps),numActuators),0.0)
 
     for poke in range(pokeSteps):
-        for actuator in range(numActuators):
-            index = (pokeSteps * actuator) + poke
+        for actuator in [30,31,32,33,34]:
+            index = (pokeSteps * (actuator-30)) + poke
             values[index, actuator] = pokeRange[poke]
 
     index = 1
