@@ -76,7 +76,7 @@ def CreateControlMatrix():
     centre[1] = parameters[1]
     diameter = parameters[2]
 
-    numActuators = AO.get_n_actuators()
+    numActuators = 5
 
     # The number of Zernike modes decomposed should always be the same as the number of actuators available
     noZernikeModes = numActuators
