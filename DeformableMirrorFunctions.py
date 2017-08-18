@@ -60,24 +60,25 @@ def getImage(pokeSteps):
     AO.reset()
     camera.disable()
 
-def CreateControlMatrix(image_stack_file_name):
+
+def CreateControlMatrix():
     AO = clients.DataClient('PYRO:AlpaoDeformableMirror@192.168.1.20:8007')
 
-    #Read in the parameters needed for the phase mask
+    # Read in the parameters needed for the phase mask
     try:
         parameters = np.loadtxt("circleParameters.txt", int)
     except IOError:
         print("Error: Masking parameters do not exist. Create by running select_circle.py")
         return
 
-    centre = [0,0]
+    centre = [0, 0]
     centre[0] = parameters[0]
     centre[1] = parameters[1]
     diameter = parameters[2]
 
     numActuators = AO.get_n_actuators()
 
-    #The number of Zernike modes decomposed should always be the same as the number of actuators available
+    # The number of Zernike modes decomposed should always be the same as the number of actuators available
     noZernikeModes = numActuators
     slopes = np.zeros(noZernikeModes)
     intercepts = np.zeros(noZernikeModes)
@@ -85,29 +86,36 @@ def CreateControlMatrix(image_stack_file_name):
     p_values = np.zeros(noZernikeModes)
     std_errs = np.zeros(noZernikeModes)
 
-    # Read in the image stack. Must be tiff
-    imageStack = io.imread('%s' %image_stack_file_name)
-    noSteps = np.shape(imageStack)[0]/numActuators
+    # Read in the image stack.
+    imageStack = np.fromfile("pokeStack.txt", dtype='uint8')
+    imageStack = np.reshape(imageStack, (-1, 2048, 2048))
+    print("Image stack read in.")
+
+    noSteps = np.shape(imageStack)[0] / numActuators
     pokeSteps = np.linspace(-1, 1, noSteps)
-    zernikeModeAmp = np.zeros((noSteps,noZernikeModes))
-    controlMatrix = np.zeros((noZernikeModes,noZernikeModes))
+    zernikeModeAmp = np.zeros((noSteps, noZernikeModes))
+    controlMatrix = np.zeros((noZernikeModes, noZernikeModes))
 
     # Here the each image in the image stack (read in as np.array), centre and diameter should be passed to the unwrap
     # function to obtain the Zernike modes for each one.
     for ii in range(numActuators):
-
-        #Get the amplitudes of each Zernike mode for the poke range of one actuator
+        # Get the amplitudes of each Zernike mode for the poke range of one actuator
         for jj in range(len(pokeSteps)):
-            [zernikeModeAmp[jj,:], unwrappedPhase] = PhaseUnwrap(imageStack[ii+jj,:,:], noZernikeModes=numActuators-1,
-                                                                MIDDLE=centre, DIAMETER=diameter)
+            print("Decomposing Zernike modes")
+            [zernikeModeAmp[jj, :], unwrappedPhase] = PhaseUnwrap(imageStack[ii + jj, :, :],
+                                                                  noZernikeModes=numActuators - 1,
+                                                                  MIDDLE=centre, DIAMETER=diameter)
 
-        #Fit a linear regression to get the relationship between actuator position and Zernike mode amplitude
+        # Fit a linear regression to get the relationship between actuator position and Zernike mode amplitude
         for kk in range(numActuators):
-            slopes[kk], intercepts[kk], r_values[kk], p_values[kk], std_errs[kk] = stats.linregress(pokeSteps,zernikeModeAmp[:,kk])
+            slopes[kk], intercepts[kk], r_values[kk], p_values[kk], std_errs[kk] = stats.linregress(pokeSteps,
+                                                                                                    zernikeModeAmp[:,
+                                                                                                    kk])
 
-        #Input obtained slopes as the entries in the control matrix
-        controlMatrix[ii,:] = slopes[:]
-        controlMatrix = np.transpose(controlMatrix)
+        # Input obtained slopes as the entries in the control matrix
+        controlMatrix[ii, :] = slopes[:]
+        print("Control values for actuator %d calculated" % ii)
+    controlMatrix = np.transpose(controlMatrix)
     np.savetxt('controlMatrix.txt', controlMatrix)
 
 def FlattenMirror():
