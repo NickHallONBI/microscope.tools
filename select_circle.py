@@ -19,35 +19,43 @@
 import Tkinter as tk
 from PIL import Image
 import numpy as np
-from resizeimage import resizeimage
 import sys
+from microscope import clients
 
 class App(tk.Frame):
-    def __init__(self, filename, master=None):
+    def __init__(self, master=None):
         tk.Frame.__init__(self, master)
         self.pack()
-        self.filename = str(filename)
         self.ratio = 4
         self.offset = [45, 50]
+        self.get_image()
         self.create_widgets()
 
 
+    def get_image(self):
+        self.cameraImage = []
+
+        camera = clients.DataClient('PYRO:XimeaCamera@192.168.1.20:8008')
+
+        camera.enable()
+        camera.set_exposure_time(0.01)
+
+        self.cameraImage = camera.trigger_and_wait()[0]
+        self.cameraImage = np.asarray(self.cameraImage)
+
+        camera.disable()
+
     def create_widgets(self):
         self.canvas = Canvas(self, width=600, height=600)
-        temp = Image.open(self.filename)
-        if len(np.shape(temp)) == 2:
-            temp = resizeimage.resize_cover(temp, [(np.shape(temp)[0]/self.ratio),(np.shape(temp)[1]/self.ratio)])
-            temp = temp.save("photo.ppm", "ppm")
-        elif len(np.shape(temp)) == 3:
-            temp = resizeimage.resize_cover(temp[0,:,:], ([np.shape(temp)[1],np.shape(temp)[2]]/self.ratio))
-            temp = temp.save("photo.ppm", "ppm")
+        temp = Image.fromarray(self.cameraImage)
+        temp = temp.resize([512,512])
+        temp = temp.save("photo.ppm", "ppm")
         self.image = tk.PhotoImage(file = "photo.ppm")
         self.canvas.create_image(self.offset[0], self.offset[1], anchor = tk.NW, image = self.image)
         self.canvas.pack()
 
         self.btn_quit = tk.Button(self, text="Quit", command=self.quit)
         self.btn_quit.pack()
-
 
 class Canvas(tk.Canvas):
     def __init__(self, *args, **kwargs):
@@ -113,6 +121,6 @@ class Canvas(tk.Canvas):
 
 
 if __name__ == '__main__':
-    app = App('%s' %sys.argv[1])
+    app = App()
     app.master.title('Select a circle.')
     app.mainloop()
